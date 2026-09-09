@@ -48,10 +48,30 @@ function MainLayout() {
   }
 
   // 2. Onboarding View
-  if (currentView === 'onboarding' || !user) {
+  if (currentView === 'onboarding') {
     return (
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         <Onboarding />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+        <AccountSelector
+          onSelectAccount={(acc) => switchAccount(acc)}
+          onCreateNewAccount={() => {
+            setEditingAccount(null);
+            setCurrentView('onboarding');
+          }}
+          onEditAccount={(acc) => {
+            setEditingAccount(acc);
+            setCurrentView('onboarding');
+          }}
+          onDeleteAccount={(acc) => deleteAccount(acc.id)}
+          onClearDb={clearDatabase}
+        />
       </div>
     );
   }
