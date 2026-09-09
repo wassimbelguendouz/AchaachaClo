@@ -217,6 +217,14 @@ export const AppProvider = ({ children }) => {
   // Actions
   const t = translations[language] || translations.fr;
 
+  const generateUniqueAccountId = () => {
+    const safeRandom = () => Math.random().toString(36).slice(2, 10);
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return `usr_${window.crypto.randomUUID()}`;
+    }
+    return `usr_${Date.now()}_${safeRandom()}_${safeRandom()}`;
+  };
+
   const toggleLanguage = () => {
     setLanguage(prev => (prev === 'fr' ? 'ar' : 'fr'));
   };
@@ -226,7 +234,7 @@ export const AppProvider = ({ children }) => {
     const resolvedInitialSeats = Number.isFinite(Number.parseInt(userData.initialSeats, 10)) ? Number.parseInt(userData.initialSeats, 10) : resolvedTotalSeats;
 
     const newUser = {
-      id: 'usr_' + Date.now(),
+      id: generateUniqueAccountId(),
       createdAt: new Date().toISOString(),
       ...userData,
       totalSeats: userData.role === 'transporteur' ? resolvedTotalSeats : undefined,
