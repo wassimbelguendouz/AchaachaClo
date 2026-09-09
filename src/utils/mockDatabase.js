@@ -59,6 +59,18 @@ const localSet = (key, value) => {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 };
 
+const localSetSafeFromEmptyRemote = (key, value) => {
+  try {
+    const current = localGet(key, []);
+    if (Array.isArray(value) && value.length === 0 && Array.isArray(current) && current.length > 0) {
+      return;
+    }
+    localSet(key, value);
+  } catch {
+    localSet(key, value);
+  }
+};
+
 // ============================================================
 // TRANSPORTEURS
 // ============================================================
@@ -83,7 +95,7 @@ export const subscribeToTransporteursDB = (callback) => {
   const col = collection(db, COLLECTIONS.TRANSPORTEURS);
   return onSnapshot(col, (snap) => {
     const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    localSet(STORAGE_KEYS.TRANSPORTEURS, data);
+    localSetSafeFromEmptyRemote(STORAGE_KEYS.TRANSPORTEURS, data);
     callback(data);
   });
 };
@@ -112,7 +124,7 @@ export const subscribeToRideRequestsDB = (callback) => {
   const q = query(col, orderBy('createdAt', 'desc'));
   return onSnapshot(q, (snap) => {
     const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    localSet(STORAGE_KEYS.RIDE_REQUESTS, data);
+    localSetSafeFromEmptyRemote(STORAGE_KEYS.RIDE_REQUESTS, data);
     callback(data);
   });
 };
@@ -140,7 +152,7 @@ export const subscribeToMessagesDB = (callback) => {
   const col = collection(db, COLLECTIONS.MESSAGES);
   return onSnapshot(col, (snap) => {
     const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    localSet(STORAGE_KEYS.MESSAGES, data);
+    localSetSafeFromEmptyRemote(STORAGE_KEYS.MESSAGES, data);
     callback(data);
   });
 };
@@ -172,7 +184,7 @@ export const subscribeToReadMessagesDB = (userId, callback) => {
   return onSnapshot(docRef, (snap) => {
     if (snap.exists()) {
       const arr = snap.data().items || [];
-      localSet(STORAGE_KEYS.READ_MESSAGES, arr);
+      localSetSafeFromEmptyRemote(STORAGE_KEYS.READ_MESSAGES, arr);
       callback(arr);
     }
   });
@@ -221,7 +233,7 @@ export const subscribeToAccountsDB = (callback) => {
   const col = collection(db, COLLECTIONS.ACCOUNTS);
   return onSnapshot(col, (snap) => {
     const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    localSet(STORAGE_KEYS.ACCOUNTS, data);
+    localSetSafeFromEmptyRemote(STORAGE_KEYS.ACCOUNTS, data);
     callback(data);
   });
 };
