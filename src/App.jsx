@@ -18,7 +18,10 @@ function MainLayout() {
     setCurrentView,
     switchAccount,
     clearDatabase,
-    firebaseActive
+    firebaseActive,
+    setEditingAccount,
+    deleteAccount,
+    updateAccount
   } = useApp();
 
   const [isManualSeatsOpen, setIsManualSeatsOpen] = useState(false);
@@ -29,7 +32,15 @@ function MainLayout() {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         <AccountSelector
           onSelectAccount={(acc) => switchAccount(acc)}
-          onCreateNewAccount={() => setCurrentView('onboarding')}
+          onCreateNewAccount={() => {
+            setEditingAccount(null);
+            setCurrentView('onboarding');
+          }}
+          onEditAccount={(acc) => {
+            setEditingAccount(acc);
+            setCurrentView('onboarding');
+          }}
+          onDeleteAccount={(acc) => deleteAccount(acc.id)}
           onClearDb={clearDatabase}
         />
       </div>

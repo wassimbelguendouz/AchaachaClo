@@ -11,6 +11,7 @@ import {
   markMessagesAsReadDB,
   getAccountsDB,
   saveAccountDB,
+  deleteAccountDB,
   clearDatabaseDB,
   subscribeToSync,
   subscribeToTransporteursDB,
@@ -44,6 +45,8 @@ export const AppProvider = ({ children }) => {
     const saved = localStorage.getItem('achaachaclo_role_v3');
     return saved || 'client';
   });
+
+  const [editingAccount, setEditingAccount] = useState(null);
 
   // Current navigation view mode: 'account_select' | 'onboarding' | 'dashboard'
   const [currentView, setCurrentView] = useState(() => {
@@ -94,6 +97,14 @@ export const AppProvider = ({ children }) => {
     } catch (e) {
       console.warn('Audio effect failed', e);
     }
+  };
+
+  const refreshLocalData = () => {
+    setAccounts(getAccountsDB());
+    setTransporteurs(getTransporteursDB());
+    setRideRequests(getRideRequestsDB());
+    setMessages(getMessagesDB());
+    setReadMessages(getReadMessagesDB());
   };
 
   // ============================================================
@@ -162,7 +173,16 @@ export const AppProvider = ({ children }) => {
         setCurrentView('onboarding');
       }
     });
-    return unsubscribe;
+
+    const handleStorage = () => {
+      refreshLocalData();
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   // Mark active chat messages as read automatically
@@ -202,17 +222,21 @@ export const AppProvider = ({ children }) => {
   };
 
   const registerUser = async (userData) => {
+    const resolvedTotalSeats = Number.isFinite(Number.parseInt(userData.totalSeats, 10)) ? Number.parseInt(userData.totalSeats, 10) : 4;
+    const resolvedInitialSeats = Number.isFinite(Number.parseInt(userData.initialSeats, 10)) ? Number.parseInt(userData.initialSeats, 10) : resolvedTotalSeats;
+
     const newUser = {
       id: 'usr_' + Date.now(),
       createdAt: new Date().toISOString(),
-      ...userData
+      ...userData,
+      totalSeats: userData.role === 'transporteur' ? resolvedTotalSeats : undefined,
+      initialSeats: userData.role === 'transporteur' ? resolvedInitialSeats : undefined,
+      nbdisponibilite: userData.role === 'transporteur' ? resolvedInitialSeats : undefined
     };
 
-    // Save to Cloud accounts registry
     const updatedAccounts = await saveAccountDB(newUser);
     setAccounts(updatedAccounts);
-
-    setUser(newUser);
+    setEditingAccount(null);
     setActiveRole(newUser.role);
 
     if (userData.role === 'transporteur') {
@@ -222,8 +246,8 @@ export const AppProvider = ({ children }) => {
         prenom: newUser.prenom,
         phone: newUser.phone,
         carModel: newUser.carModel || 'Véhicule',
-        totalSeats: parseInt(newUser.totalSeats) || 4,
-        nbdisponibilite: parseInt(newUser.initialSeats) || 4,
+        totalSeats: resolvedTotalSeats,
+        nbdisponibilite: resolvedInitialSeats,
         routeSource: 'Achaacha',
         routeDest: 'Mostaganem',
         location: { lat: 36.242, lng: 0.285 }
@@ -232,12 +256,70 @@ export const AppProvider = ({ children }) => {
       setTransporteurs(getTransporteursDB());
     }
 
-    setCurrentView('dashboard');
+    setUser(null);
+    setCurrentView('account_select');
+    return updatedAccounts;
+  };
+
+  const updateAccount = async (accountData) => {
+    const resolvedTotalSeats = Number.isFinite(Number.parseInt(accountData.totalSeats, 10)) ? Number.parseInt(accountData.totalSeats, 10) : 4;
+    const resolvedInitialSeats = Number.isFinite(Number.parseInt(accountData.initialSeats, 10)) ? Number.parseInt(accountData.initialSeats, 10) : resolvedTotalSeats;
+
+    const updatedAccount = {
+      ...accountData,
+      totalSeats: accountData.role === 'transporteur' ? resolvedTotalSeats : undefined,
+      initialSeats: accountData.role === 'transporteur' ? resolvedInitialSeats : undefined,
+      nbdisponibilite: accountData.role === 'transporteur' ? resolvedInitialSeats : undefined
+    };
+
+    const updatedAccounts = await saveAccountDB(updatedAccount);
+    setAccounts(updatedAccounts);
+    setEditingAccount(null);
+
+    if (accountData.role === 'transporteur') {
+      const driverObj = {
+        id: updatedAccount.id,
+        nom: updatedAccount.nom,
+        prenom: updatedAccount.prenom,
+        phone: updatedAccount.phone,
+        carModel: updatedAccount.carModel || 'Véhicule',
+        totalSeats: resolvedTotalSeats,
+        nbdisponibilite: resolvedInitialSeats,
+        routeSource: 'Achaacha',
+        routeDest: 'Mostaganem',
+        location: { lat: 36.242, lng: 0.285 }
+      };
+      await createOrUpdateDriverDB(driverObj);
+      setTransporteurs(getTransporteursDB());
+    }
+
+    setUser(null);
+    setCurrentView('account_select');
+    return updatedAccounts;
+  };
+
+  const deleteAccount = async (accountId) => {
+    const updatedAccounts = await deleteAccountDB(accountId);
+    setAccounts(updatedAccounts);
+
+    const driverList = getTransporteursDB().filter(d => d.id !== accountId);
+    await saveTransporteursDB(driverList);
+    setTransporteurs(driverList);
+
+    if (user && user.id === accountId) {
+      setUser(null);
+    }
+
+    setCurrentView('account_select');
+    setEditingAccount(null);
+    return updatedAccounts;
   };
 
   const switchAccount = (accountData) => {
     setUser(accountData);
     setActiveRole(accountData.role);
+    setAccounts(getAccountsDB());
+    setTransporteurs(getTransporteursDB());
     setCurrentView('dashboard');
   };
 
@@ -370,12 +452,16 @@ export const AppProvider = ({ children }) => {
         setUser,
         accounts,
         registerUser,
+        updateAccount,
+        deleteAccount,
         switchAccount,
         clearDatabase,
         currentView,
         setCurrentView,
         activeRole,
         setActiveRole,
+        editingAccount,
+        setEditingAccount,
         transporteurs,
         rideRequests,
         messages,

@@ -186,7 +186,7 @@ export const getAccountsDB = () => localGet(STORAGE_KEYS.ACCOUNTS, []);
 
 export const saveAccountDB = async (accountData) => {
   const accounts = getAccountsDB();
-  const existingIdx = accounts.findIndex(a => a.id === accountData.id || a.phone === accountData.phone);
+  const existingIdx = accounts.findIndex(a => a.id === accountData.id);
   let updated;
   if (existingIdx >= 0) {
     accounts[existingIdx] = { ...accounts[existingIdx], ...accountData };
@@ -202,6 +202,18 @@ export const saveAccountDB = async (accountData) => {
     await setDoc(docRef, { ...accountData, _updatedAt: serverTimestamp() }, { merge: true });
   }
   return updated;
+};
+
+export const deleteAccountDB = async (accountId) => {
+  const accounts = getAccountsDB().filter(a => a.id !== accountId);
+  localSet(STORAGE_KEYS.ACCOUNTS, accounts);
+  channel.postMessage({ type: 'ACCOUNTS_UPDATED', payload: accounts });
+
+  if (isFirebaseConfigured && db) {
+    const docRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+    await deleteDoc(docRef);
+  }
+  return accounts;
 };
 
 export const subscribeToAccountsDB = (callback) => {
@@ -239,7 +251,7 @@ export const clearDatabaseDB = async () => {
 
 export const createOrUpdateDriverDB = async (driverData) => {
   const drivers = getTransporteursDB();
-  const existingIdx = drivers.findIndex(d => d.id === driverData.id || d.phone === driverData.phone);
+  const existingIdx = drivers.findIndex(d => d.id === driverData.id);
   let updated;
   if (existingIdx >= 0) {
     drivers[existingIdx] = { ...drivers[existingIdx], ...driverData };

@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { User, Car, PlusCircle, Trash2, ShieldCheck, Phone, ArrowRight } from 'lucide-react';
 
-export const AccountSelector = ({ onSelectAccount, onCreateNewAccount, onClearDb }) => {
+export const AccountSelector = ({ onSelectAccount, onCreateNewAccount, onEditAccount, onDeleteAccount, onClearDb }) => {
   const { t, accounts } = useApp();
 
   return (
@@ -42,19 +42,18 @@ export const AccountSelector = ({ onSelectAccount, onCreateNewAccount, onClearDb
             accounts.map((acc) => (
               <div
                 key={acc.id}
-                onClick={() => onSelectAccount(acc)}
                 className="glass-card"
                 style={{
                   padding: '16px 20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  cursor: 'pointer',
+                  gap: '12px',
                   border: acc.role === 'transporteur' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(59, 130, 246, 0.4)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div onClick={() => onSelectAccount(acc)} style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, cursor: 'pointer' }}>
                   <div style={{
                     width: '42px',
                     height: '42px',
@@ -76,14 +75,35 @@ export const AccountSelector = ({ onSelectAccount, onCreateNewAccount, onClearDb
                     </div>
                     <div style={{ fontSize: '0.85rem', color: '#9ca3af', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <span><Phone size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {acc.phone}</span>
-                      {acc.carModel && <span>🚗 {acc.carModel} ({acc.nbdisponibilite ?? 0} places libres)</span>}
+                      {acc.carModel && <span>🚗 {acc.carModel} ({acc.nbdisponibilite ?? acc.initialSeats ?? 0} places libres)</span>}
                     </div>
                   </div>
                 </div>
 
-                <button className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                  Connexion ➔
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditAccount(acc);
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteAccount(acc);
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </div>
             ))
           )}

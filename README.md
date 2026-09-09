@@ -123,7 +123,7 @@ Une fois déployé sur Vercel, partagez simplement le lien :
 |---|---|
 | 🔴 Comptes s'effacent au redémarrage | ✅ Comptes sauvegardés dans **Firebase Cloud** (permanents) |
 | 🔴 Données perdues si cache nettoyé | ✅ Stockage Cloud — indépendant du navigateur |
-| 🔴 Pas de partage entre machines | ✅ Synchronisation temps réel sur **tous les appareils** |
+| 🔴 Partage entre appareils non activé sans Firebase | ✅ Synchronisation temps réel sur **tous les appareils** après configuration de Firebase et redéploiement Vercel |
 | 🔴 Accessible uniquement en local | ✅ Hébergement gratuit sur **Vercel** (lien HTTPS mondial) |
 | 🔴 Serveur doit tourner sur le PC | ✅ Application entièrement en ligne — aucun serveur nécessaire |
 

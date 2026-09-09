@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { BackButton } from '../components/BackButton';
 import { User, Phone, Car, Users, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export const Onboarding = () => {
-  const { t, registerUser, activeRole, setActiveRole, accounts, setCurrentView } = useApp();
+  const { t, registerUser, updateAccount, activeRole, setActiveRole, accounts, setCurrentView, editingAccount, setEditingAccount } = useApp();
 
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
@@ -15,6 +15,28 @@ export const Onboarding = () => {
   const [carModel, setCarModel] = useState('Dacia Logan');
   const [totalSeats, setTotalSeats] = useState('4');
   const [initialSeats, setInitialSeats] = useState('4');
+
+  useEffect(() => {
+    if (editingAccount) {
+      setNom(editingAccount.nom || '');
+      setPrenom(editingAccount.prenom || '');
+      setPhone(editingAccount.phone || '');
+      setActiveRole(editingAccount.role || 'client');
+      setCarModel(editingAccount.carModel || 'Dacia Logan');
+      setTotalSeats(String(editingAccount.totalSeats ?? editingAccount.nbdisponibilite ?? 4));
+      setInitialSeats(String(editingAccount.initialSeats ?? editingAccount.nbdisponibilite ?? 4));
+      return;
+    }
+
+    setNom('');
+    setPrenom('');
+    setPhone('');
+    setPhoneError('');
+    setCarModel('Dacia Logan');
+    setTotalSeats('4');
+    setInitialSeats('4');
+    setActiveRole('client');
+  }, [editingAccount, setActiveRole]);
 
   // Algerian phone regex: 10 digits starting with 05, 06, or 07
   const validatePhone = (phoneNumber) => {
@@ -31,21 +53,27 @@ export const Onboarding = () => {
       return;
     }
 
-    // REQUIREMENT 1: Strict Algerian Phone Number Validation
     if (!validatePhone(phone)) {
       setPhoneError(t.invalidPhoneError);
       return;
     }
 
-    registerUser({
+    const payload = {
       nom: nom.trim(),
       prenom: prenom.trim(),
       phone: phone.trim(),
       role: activeRole,
       carModel: activeRole === 'transporteur' ? carModel : undefined,
-      totalSeats: activeRole === 'transporteur' ? parseInt(totalSeats) : undefined,
-      initialSeats: activeRole === 'transporteur' ? parseInt(initialSeats) : undefined,
-    });
+      totalSeats: activeRole === 'transporteur' ? parseInt(totalSeats, 10) || 4 : undefined,
+      initialSeats: activeRole === 'transporteur' ? parseInt(initialSeats, 10) || 4 : undefined,
+    };
+
+    if (editingAccount) {
+      updateAccount({ ...editingAccount, ...payload });
+      return;
+    }
+
+    registerUser(payload);
   };
 
   return (
@@ -230,7 +258,7 @@ export const Onboarding = () => {
 
           <button type="submit" className="btn-primary" style={{ marginTop: '12px', padding: '14px', borderRadius: '14px', fontSize: '1.05rem' }}>
             <ShieldCheck size={20} />
-            {t.createAccount}
+            {editingAccount ? 'Enregistrer les modifications' : t.createAccount}
           </button>
         </form>
 
