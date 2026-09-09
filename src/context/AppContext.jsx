@@ -256,6 +256,12 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('achaachaclo_role_v3', activeRole);
   }, [activeRole]);
 
+  useEffect(() => {
+    if (currentView === 'account_select' || !user) {
+      setAccounts(getAccountsDB());
+    }
+  }, [currentView, user]);
+
   // Actions
   const t = translations[language] || translations.fr;
 
