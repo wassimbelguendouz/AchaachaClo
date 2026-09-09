@@ -435,6 +435,12 @@ export const AppProvider = ({ children }) => {
     setRideRequests(updatedRequests);
     setTransporteurs(getTransporteursDB());
 
+    const acceptedRequest = updatedRequests.find(req => req.id === requestId);
+    if (acceptedRequest && user && user.role === 'transporteur') {
+      const confirmationText = `🚘 okRakM3aya: confirmé pour ${acceptedRequest.requestedSeats} place(s) à ${unitPrice} DZD/place. Heure proposée: ${driverDepartureTime || acceptedRequest.departureTime || '08:30'}.`;
+      await sendMessage(requestId, confirmationText);
+    }
+
     if (user && user.role === 'transporteur') {
       const currentDriver = getTransporteursDB().find(d => d.id === user.id);
       if (currentDriver) {
@@ -449,7 +455,11 @@ export const AppProvider = ({ children }) => {
   const setFinalAgreedTime = async (requestId, time) => {
     const updatedRequests = await setFinalAgreedTimeDB(requestId, time);
     setRideRequests(updatedRequests);
-    sendMessage(requestId, `⏰ ${t.quickTimeConfirmed} (${time})`);
+    const request = updatedRequests.find(req => req.id === requestId);
+    if (request) {
+      const notificationText = `⏰ ${t.quickTimeConfirmed} (${time})`;
+      await sendMessage(requestId, notificationText);
+    }
   };
 
   const cancelRide = async (requestId) => {
