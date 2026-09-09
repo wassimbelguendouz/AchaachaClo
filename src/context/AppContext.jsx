@@ -258,12 +258,23 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     if (currentView === 'account_select' || !user) {
-      setAccounts(getAccountsDB());
+      refreshLocalData();
     }
   }, [currentView, user]);
 
   // Actions
   const t = translations[language] || translations.fr;
+
+  const normalizePhone = (value) => (value || '').replace(/\D/g, '');
+
+  const findDuplicateAccount = (payload, ignoreId = null) => {
+    const phone = normalizePhone(payload.phone);
+    return getAccountsDB().find(account => {
+      if (!account || !account.phone) return false;
+      if (ignoreId && account.id === ignoreId) return false;
+      return normalizePhone(account.phone) === phone;
+    });
+  };
 
   const generateUniqueAccountId = () => {
     const safeRandom = () => Math.random().toString(36).slice(2, 10);
@@ -278,6 +289,14 @@ export const AppProvider = ({ children }) => {
   };
 
   const registerUser = async (userData) => {
+    const phone = normalizePhone(userData.phone);
+    const duplicate = findDuplicateAccount({ ...userData, phone });
+
+    if (duplicate) {
+      alert('Ce compte existe déjà. Un numéro de téléphone ne peut pas être utilisé deux fois.');
+      return null;
+    }
+
     const resolvedTotalSeats = Number.isFinite(Number.parseInt(userData.totalSeats, 10)) ? Number.parseInt(userData.totalSeats, 10) : 4;
     const resolvedInitialSeats = Number.isFinite(Number.parseInt(userData.initialSeats, 10)) ? Number.parseInt(userData.initialSeats, 10) : resolvedTotalSeats;
 
@@ -285,6 +304,7 @@ export const AppProvider = ({ children }) => {
       id: generateUniqueAccountId(),
       createdAt: new Date().toISOString(),
       ...userData,
+      phone,
       totalSeats: userData.role === 'transporteur' ? resolvedTotalSeats : undefined,
       initialSeats: userData.role === 'transporteur' ? resolvedInitialSeats : undefined,
       nbdisponibilite: userData.role === 'transporteur' ? resolvedInitialSeats : undefined
@@ -313,17 +333,28 @@ export const AppProvider = ({ children }) => {
       setTransporteurs(getTransporteursDB());
     }
 
+    refreshLocalData();
     setUser(null);
     setCurrentView('account_select');
+    alert('Compte créé avec succès !');
     return updatedAccounts;
   };
 
   const updateAccount = async (accountData) => {
+    const phone = normalizePhone(accountData.phone);
+    const duplicate = findDuplicateAccount({ ...accountData, phone }, accountData.id);
+
+    if (duplicate) {
+      alert('Ce compte existe déjà. Un numéro de téléphone ne peut pas être utilisé deux fois.');
+      return null;
+    }
+
     const resolvedTotalSeats = Number.isFinite(Number.parseInt(accountData.totalSeats, 10)) ? Number.parseInt(accountData.totalSeats, 10) : 4;
     const resolvedInitialSeats = Number.isFinite(Number.parseInt(accountData.initialSeats, 10)) ? Number.parseInt(accountData.initialSeats, 10) : resolvedTotalSeats;
 
     const updatedAccount = {
       ...accountData,
+      phone,
       totalSeats: accountData.role === 'transporteur' ? resolvedTotalSeats : undefined,
       initialSeats: accountData.role === 'transporteur' ? resolvedInitialSeats : undefined,
       nbdisponibilite: accountData.role === 'transporteur' ? resolvedInitialSeats : undefined
@@ -350,8 +381,10 @@ export const AppProvider = ({ children }) => {
       setTransporteurs(getTransporteursDB());
     }
 
+    refreshLocalData();
     setUser(null);
     setCurrentView('account_select');
+    alert('Compte mis à jour avec succès !');
     return updatedAccounts;
   };
 
