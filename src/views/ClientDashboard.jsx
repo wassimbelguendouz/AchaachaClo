@@ -15,7 +15,8 @@ export const ClientDashboard = () => {
     cancelRide,
     setActiveChatReq,
     setCurrentView,
-    getUnreadMessageCount
+    getUnreadMessageCount,
+    firebaseActive
   } = useApp();
 
   const [source, setSource] = useState('Achaacha Centre');
@@ -238,6 +239,20 @@ export const ClientDashboard = () => {
       {/* Available Drivers List */}
       {hasSearched && (
         <div className="glass-panel" style={{ padding: '24px' }}>
+          {!firebaseActive && (
+            <div style={{
+              marginBottom: '16px',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              background: 'rgba(245, 158, 11, 0.08)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              color: '#fbbf24',
+              fontWeight: 700,
+              fontSize: '0.82rem'
+            }}>
+              La recherche entre appareils exige Firebase. Sans VITE_FIREBASE_* configuré, chaque téléphone garde ses propres données locales et aucun chauffeur ne peut apparaître à distance.
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Car size={22} color="#f59e0b" />
