@@ -107,6 +107,48 @@ export const AppProvider = ({ children }) => {
     setReadMessages(getReadMessagesDB());
   };
 
+  const syncDriverRecordsFromAccounts = async () => {
+    const accountsList = getAccountsDB();
+    const driverAccounts = accountsList.filter(account => account.role === 'transporteur');
+    const currentDrivers = getTransporteursDB();
+
+    const nextDrivers = [...currentDrivers];
+
+    for (const account of driverAccounts) {
+      const resolvedTotalSeats = Number.isFinite(Number.parseInt(account.totalSeats, 10)) ? Number.parseInt(account.totalSeats, 10) : 4;
+      const resolvedInitialSeats = Number.isFinite(Number.parseInt(account.initialSeats, 10)) ? Number.parseInt(account.initialSeats, 10) : Number.isFinite(Number.parseInt(account.nbdisponibilite, 10)) ? Number.parseInt(account.nbdisponibilite, 10) : resolvedTotalSeats;
+      const driverRecord = {
+        id: account.id,
+        nom: account.nom,
+        prenom: account.prenom,
+        phone: account.phone,
+        carModel: account.carModel || 'Véhicule',
+        totalSeats: resolvedTotalSeats,
+        nbdisponibilite: Math.max(0, resolvedInitialSeats),
+        routeSource: 'Achaacha',
+        routeDest: 'Mostaganem',
+        location: { lat: 36.242, lng: 0.285 }
+      };
+
+      const index = nextDrivers.findIndex(driver => driver.id === account.id);
+      if (index >= 0) {
+        nextDrivers[index] = { ...nextDrivers[index], ...driverRecord };
+      } else {
+        nextDrivers.push(driverRecord);
+      }
+    }
+
+    const filteredDrivers = nextDrivers.filter(driver => {
+      const matchesAccount = !accountsList.some(account => account.id === driver.id && account.role === 'transporteur');
+      return matchesAccount || driver.id;
+    });
+
+    if (filteredDrivers.length !== currentDrivers.length || filteredDrivers.some((driver, index) => driver.id !== currentDrivers[index]?.id || driver.nbdisponibilite !== currentDrivers[index]?.nbdisponibilite || driver.carModel !== currentDrivers[index]?.carModel)) {
+      await saveTransporteursDB(filteredDrivers);
+      setTransporteurs(filteredDrivers);
+    }
+  };
+
   // ============================================================
   // FIREBASE REAL-TIME SUBSCRIPTIONS (cross-device sync)
   // ============================================================
@@ -261,6 +303,7 @@ export const AppProvider = ({ children }) => {
         location: { lat: 36.242, lng: 0.285 }
       };
       await createOrUpdateDriverDB(driverObj);
+      await syncDriverRecordsFromAccounts();
       setTransporteurs(getTransporteursDB());
     }
 
@@ -327,6 +370,7 @@ export const AppProvider = ({ children }) => {
     setUser(accountData);
     setActiveRole(accountData.role);
     setAccounts(getAccountsDB());
+    syncDriverRecordsFromAccounts();
     setTransporteurs(getTransporteursDB());
     setCurrentView('dashboard');
   };
