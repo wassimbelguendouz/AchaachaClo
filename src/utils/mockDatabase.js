@@ -65,6 +65,7 @@ const localSetSafeFromEmptyRemote = (key, value) => {
     if (Array.isArray(value) && value.length === 0 && Array.isArray(current) && current.length > 0) {
       return;
     }
+    console.debug(`localSetSafeFromEmptyRemote: setting ${key} (items: ${Array.isArray(value) ? value.length : 'n/a'})`);
     localSet(key, value);
   } catch {
     localSet(key, value);
@@ -78,6 +79,7 @@ const localSetSafeFromEmptyRemote = (key, value) => {
 export const getTransporteursDB = () => localGet(STORAGE_KEYS.TRANSPORTEURS, []);
 
 export const saveTransporteursDB = async (transporteurs) => {
+  console.debug('saveTransporteursDB: saving', transporteurs.length, 'transporteurs');
   localSet(STORAGE_KEYS.TRANSPORTEURS, transporteurs);
   channel.postMessage({ type: 'TRANSPORTEURS_UPDATED', payload: transporteurs });
 
@@ -107,6 +109,7 @@ export const subscribeToTransporteursDB = (callback) => {
 export const getRideRequestsDB = () => localGet(STORAGE_KEYS.RIDE_REQUESTS, []);
 
 export const saveRideRequestsDB = async (requests) => {
+  console.debug('saveRideRequestsDB: saving', requests.length, 'requests');
   localSet(STORAGE_KEYS.RIDE_REQUESTS, requests);
   channel.postMessage({ type: 'REQUESTS_UPDATED', payload: requests });
 
@@ -136,6 +139,7 @@ export const subscribeToRideRequestsDB = (callback) => {
 export const getMessagesDB = () => localGet(STORAGE_KEYS.MESSAGES, []);
 
 export const saveMessagesDB = async (messages) => {
+  console.debug('saveMessagesDB: saving', messages.length, 'messages');
   localSet(STORAGE_KEYS.MESSAGES, messages);
   channel.postMessage({ type: 'MESSAGES_UPDATED', payload: messages });
 
@@ -168,6 +172,7 @@ export const markMessagesAsReadDB = async (requestId, userId) => {
   const readList = new Set(getReadMessagesDB());
   messages.filter(m => m.requestId === requestId).forEach(m => readList.add(`${m.id}_${userId}`));
   const arr = Array.from(readList);
+  console.debug('markMessagesAsReadDB: marking read for user', userId, 'on request', requestId, 'count', arr.length);
   localSet(STORAGE_KEYS.READ_MESSAGES, arr);
   channel.postMessage({ type: 'READ_UPDATED', payload: arr });
 
@@ -206,6 +211,7 @@ export const saveAccountDB = async (accountData) => {
   } else {
     updated = [accountData, ...accounts];
   }
+  console.debug('saveAccountDB: saving account', accountData.id, accountData.phone);
   localSet(STORAGE_KEYS.ACCOUNTS, updated);
   channel.postMessage({ type: 'ACCOUNTS_UPDATED', payload: updated });
 

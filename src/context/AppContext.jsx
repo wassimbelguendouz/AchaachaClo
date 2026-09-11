@@ -195,6 +195,7 @@ export const AppProvider = ({ children }) => {
   // Sync effect across tabs in same browser (BroadcastChannel fallback)
   useEffect(() => {
     const unsubscribe = subscribeToSync((event) => {
+      console.debug('subscribeToSync event received:', event?.type);
       if (event.type === 'TRANSPORTEURS_UPDATED') {
         setTransporteurs(event.payload);
       } else if (event.type === 'REQUESTS_UPDATED') {
@@ -473,7 +474,11 @@ export const AppProvider = ({ children }) => {
     const acceptedRequest = updatedRequests.find(req => req.id === requestId);
     if (acceptedRequest && user && user.role === 'transporteur') {
       const confirmationText = `🚘 okRakM3aya: confirmé pour ${acceptedRequest.requestedSeats} place(s) à ${unitPrice} DZD/place. Heure proposée: ${driverDepartureTime || acceptedRequest.departureTime || '08:30'}.`;
+      console.debug('Driver sending okRakM3aya confirmation for request', requestId, { unitPrice, driverDepartureTime });
       await sendMessage(requestId, confirmationText);
+      // Ensure immediate local propagation for both requests and messages
+      setRideRequests(getRideRequestsDB());
+      setMessages(getMessagesDB());
     }
 
     if (user && user.role === 'transporteur') {
@@ -516,6 +521,7 @@ export const AppProvider = ({ children }) => {
 
   const sendMessage = async (requestId, text) => {
     if (!text.trim() || !user) return;
+    console.debug('sendMessage called by', user?.id, 'for request', requestId, text);
     const newMsg = {
       id: 'msg_' + Date.now(),
       requestId,
@@ -527,8 +533,9 @@ export const AppProvider = ({ children }) => {
     };
     const allMsgs = [...getMessagesDB(), newMsg];
     await saveMessagesDB(allMsgs);
+    // update local state immediately
     setMessages(allMsgs);
-
+    // Do NOT mark messages as read for the recipient here; mark as read only for the current user
     await markMessagesAsReadDB(requestId, user.id);
     playNotificationSound();
   };
