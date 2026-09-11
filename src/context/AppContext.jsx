@@ -408,7 +408,9 @@ export const AppProvider = ({ children }) => {
   const switchAccount = (accountData) => {
     setUser(accountData);
     setActiveRole(accountData.role);
-    setAccounts(getAccountsDB());
+    // Ensure full local rehydration so ride requests and messages are current
+    refreshLocalData();
+    // Also ensure drivers are synced from accounts
     syncDriverRecordsFromAccounts();
     setTransporteurs(getTransporteursDB());
     setCurrentView('dashboard');
@@ -482,6 +484,8 @@ export const AppProvider = ({ children }) => {
         await saveAccountDB(updatedUser);
       }
     }
+    // Refresh local state to ensure other UI views (client) pick up changes
+    refreshLocalData();
     playNotificationSound();
   };
 
