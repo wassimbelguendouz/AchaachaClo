@@ -13,7 +13,7 @@ const firebaseConfig = {
 
 // Check if Firebase is configured with real credentials
 export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.apiKey !== 'YOUR_API_KEY'
+  firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.apiKey !== 'AIzaSyDF25injYgsD__Kq3yihtgcsIy7DNlqltI'
 );
 
 let db = null;
