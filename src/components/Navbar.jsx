@@ -5,7 +5,7 @@ import { BackButton } from './BackButton';
 import { Car, User, Phone, Edit3, Users, MessageSquare } from 'lucide-react';
 
 export const Navbar = ({ onOpenManualSeats }) => {
-  const { t, user, activeRole, setActiveRole, setCurrentView, accounts, getTotalUnreadCount } = useApp();
+  const { t, user, activeRole, setActiveRole, setCurrentView, accounts, getTotalUnreadCount, refreshLocalData } = useApp();
   const totalUnread = getTotalUnreadCount();
 
   return (
@@ -130,6 +130,18 @@ export const Navbar = ({ onOpenManualSeats }) => {
         )}
 
         <LanguageSwitcher />
+
+        <button
+          onClick={() => {
+            console.debug('Manual sync triggered from Navbar');
+            refreshLocalData();
+          }}
+          className="btn-secondary"
+          style={{ fontSize: '0.82rem', padding: '6px 10px', borderRadius: '8px' }}
+          title="Forcer la synchronisation locale"
+        >
+          🔄 Sync
+        </button>
 
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '10px', fontSize: '0.85rem' }}>

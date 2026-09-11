@@ -537,6 +537,8 @@ export const AppProvider = ({ children }) => {
     setMessages(allMsgs);
     // Do NOT mark messages as read for the recipient here; mark as read only for the current user
     await markMessagesAsReadDB(requestId, user.id);
+    // Force local refresh so other views pick up the new message immediately
+    refreshLocalData();
     playNotificationSound();
   };
 
@@ -560,6 +562,7 @@ export const AppProvider = ({ children }) => {
         t,
         language,
         toggleLanguage,
+        refreshLocalData,
         user,
         setUser,
         accounts,
