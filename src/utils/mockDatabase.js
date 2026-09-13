@@ -59,6 +59,15 @@ const localSet = (key, value) => {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 };
 
+const mergeById = (existing = [], incoming = []) => {
+  const map = new Map();
+  [...existing, ...incoming].forEach(item => {
+    if (!item || !item.id) return;
+    map.set(item.id, item);
+  });
+  return Array.from(map.values());
+};
+
 const localSetSafeFromEmptyRemote = (key, value) => {
   try {
     const current = localGet(key, []);
@@ -79,9 +88,10 @@ const localSetSafeFromEmptyRemote = (key, value) => {
 export const getTransporteursDB = () => localGet(STORAGE_KEYS.TRANSPORTEURS, []);
 
 export const saveTransporteursDB = async (transporteurs) => {
-  console.debug('saveTransporteursDB: saving', transporteurs.length, 'transporteurs');
-  localSet(STORAGE_KEYS.TRANSPORTEURS, transporteurs);
-  channel.postMessage({ type: 'TRANSPORTEURS_UPDATED', payload: transporteurs });
+  const merged = mergeById(getTransporteursDB(), transporteurs);
+  console.debug('saveTransporteursDB: saving', merged.length, 'transporteurs');
+  localSet(STORAGE_KEYS.TRANSPORTEURS, merged);
+  channel.postMessage({ type: 'TRANSPORTEURS_UPDATED', payload: merged });
 
   if (isFirebaseConfigured && db) {
     // Clear and re-save all (simple sync strategy)
@@ -109,9 +119,10 @@ export const subscribeToTransporteursDB = (callback) => {
 export const getRideRequestsDB = () => localGet(STORAGE_KEYS.RIDE_REQUESTS, []);
 
 export const saveRideRequestsDB = async (requests) => {
-  console.debug('saveRideRequestsDB: saving', requests.length, 'requests');
-  localSet(STORAGE_KEYS.RIDE_REQUESTS, requests);
-  channel.postMessage({ type: 'REQUESTS_UPDATED', payload: requests });
+  const merged = mergeById(getRideRequestsDB(), requests);
+  console.debug('saveRideRequestsDB: saving', merged.length, 'requests');
+  localSet(STORAGE_KEYS.RIDE_REQUESTS, merged);
+  channel.postMessage({ type: 'REQUESTS_UPDATED', payload: merged });
 
   if (isFirebaseConfigured && db) {
     const col = collection(db, COLLECTIONS.RIDE_REQUESTS);
@@ -139,9 +150,10 @@ export const subscribeToRideRequestsDB = (callback) => {
 export const getMessagesDB = () => localGet(STORAGE_KEYS.MESSAGES, []);
 
 export const saveMessagesDB = async (messages) => {
-  console.debug('saveMessagesDB: saving', messages.length, 'messages');
-  localSet(STORAGE_KEYS.MESSAGES, messages);
-  channel.postMessage({ type: 'MESSAGES_UPDATED', payload: messages });
+  const merged = mergeById(getMessagesDB(), messages);
+  console.debug('saveMessagesDB: saving', merged.length, 'messages');
+  localSet(STORAGE_KEYS.MESSAGES, merged);
+  channel.postMessage({ type: 'MESSAGES_UPDATED', payload: merged });
 
   if (isFirebaseConfigured && db) {
     const col = collection(db, COLLECTIONS.MESSAGES);
@@ -211,9 +223,10 @@ export const saveAccountDB = async (accountData) => {
   } else {
     updated = [accountData, ...accounts];
   }
+  const merged = mergeById(accounts, updated);
   console.debug('saveAccountDB: saving account', accountData.id, accountData.phone);
-  localSet(STORAGE_KEYS.ACCOUNTS, updated);
-  channel.postMessage({ type: 'ACCOUNTS_UPDATED', payload: updated });
+  localSet(STORAGE_KEYS.ACCOUNTS, merged);
+  channel.postMessage({ type: 'ACCOUNTS_UPDATED', payload: merged });
 
   if (isFirebaseConfigured && db) {
     const docRef = doc(db, COLLECTIONS.ACCOUNTS, accountData.id);
