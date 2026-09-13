@@ -195,7 +195,8 @@ export const AppProvider = ({ children }) => {
   // Sync effect across tabs in same browser (BroadcastChannel fallback)
   useEffect(() => {
     const unsubscribe = subscribeToSync((event) => {
-      console.debug('subscribeToSync event received:', event?.type);
+      if (!event || !event.type) return;
+      console.debug('subscribeToSync event received:', event.type);
       if (event.type === 'TRANSPORTEURS_UPDATED') {
         setTransporteurs(event.payload);
       } else if (event.type === 'REQUESTS_UPDATED') {
@@ -222,11 +223,17 @@ export const AppProvider = ({ children }) => {
     };
 
     window.addEventListener('storage', handleStorage);
+
+    const refreshTimer = !user ? null : setInterval(() => {
+      refreshLocalData();
+    }, 2000);
+
     return () => {
       unsubscribe();
       window.removeEventListener('storage', handleStorage);
+      if (refreshTimer) clearInterval(refreshTimer);
     };
-  }, []);
+  }, [user?.id]);
 
   // Mark active chat messages as read automatically
   useEffect(() => {
