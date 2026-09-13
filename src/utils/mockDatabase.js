@@ -59,6 +59,15 @@ const localSet = (key, value) => {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 };
 
+const emitSyncEvent = (type, payload) => {
+  const event = { type, payload, ts: Date.now() };
+  localSet('achaachaclo_sync_event_v3', event);
+  channel.postMessage(event);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('achaachaclo_sync_custom', { detail: event }));
+  }
+};
+
 const mergeById = (existing = [], incoming = []) => {
   const map = new Map();
   [...existing, ...incoming].forEach(item => {
@@ -91,7 +100,7 @@ export const saveTransporteursDB = async (transporteurs) => {
   const merged = mergeById(getTransporteursDB(), transporteurs);
   console.debug('saveTransporteursDB: saving', merged.length, 'transporteurs');
   localSet(STORAGE_KEYS.TRANSPORTEURS, merged);
-  channel.postMessage({ type: 'TRANSPORTEURS_UPDATED', payload: merged });
+  emitSyncEvent('TRANSPORTEURS_UPDATED', merged);
 
   if (isFirebaseConfigured && db) {
     // Clear and re-save all (simple sync strategy)
@@ -122,7 +131,7 @@ export const saveRideRequestsDB = async (requests) => {
   const merged = mergeById(getRideRequestsDB(), requests);
   console.debug('saveRideRequestsDB: saving', merged.length, 'requests');
   localSet(STORAGE_KEYS.RIDE_REQUESTS, merged);
-  channel.postMessage({ type: 'REQUESTS_UPDATED', payload: merged });
+  emitSyncEvent('REQUESTS_UPDATED', merged);
 
   if (isFirebaseConfigured && db) {
     const col = collection(db, COLLECTIONS.RIDE_REQUESTS);
@@ -153,7 +162,7 @@ export const saveMessagesDB = async (messages) => {
   const merged = mergeById(getMessagesDB(), messages);
   console.debug('saveMessagesDB: saving', merged.length, 'messages');
   localSet(STORAGE_KEYS.MESSAGES, merged);
-  channel.postMessage({ type: 'MESSAGES_UPDATED', payload: merged });
+  emitSyncEvent('MESSAGES_UPDATED', merged);
 
   if (isFirebaseConfigured && db) {
     const col = collection(db, COLLECTIONS.MESSAGES);
@@ -186,7 +195,7 @@ export const markMessagesAsReadDB = async (requestId, userId) => {
   const arr = Array.from(readList);
   console.debug('markMessagesAsReadDB: marking read for user', userId, 'on request', requestId, 'count', arr.length);
   localSet(STORAGE_KEYS.READ_MESSAGES, arr);
-  channel.postMessage({ type: 'READ_UPDATED', payload: arr });
+  emitSyncEvent('READ_UPDATED', arr);
 
   if (isFirebaseConfigured && db) {
     const docRef = doc(db, COLLECTIONS.READ_MESSAGES, `read_${userId}`);
@@ -226,7 +235,7 @@ export const saveAccountDB = async (accountData) => {
   const merged = mergeById(accounts, updated);
   console.debug('saveAccountDB: saving account', accountData.id, accountData.phone);
   localSet(STORAGE_KEYS.ACCOUNTS, merged);
-  channel.postMessage({ type: 'ACCOUNTS_UPDATED', payload: merged });
+  emitSyncEvent('ACCOUNTS_UPDATED', merged);
 
   if (isFirebaseConfigured && db) {
     const docRef = doc(db, COLLECTIONS.ACCOUNTS, accountData.id);
@@ -411,9 +420,26 @@ export const cancelRideRequestDB = async (requestId) => {
 // BROADCAST CHANNEL (sync onglets même navigateur)
 // ============================================================
 export const subscribeToSync = (callback) => {
-  const handler = (event) => callback(event.data);
+  const handler = (event) => callback(event?.data || event?.detail || event);
+  const onStorage = (event) => {
+    if (!event.key || event.key !== 'achaachaclo_sync_event_v3' || !event.newValue) return;
+    try {
+      callback(JSON.parse(event.newValue));
+    } catch {
+      callback(null);
+    }
+  };
+  const onCustomEvent = (event) => callback(event.detail);
+
   channel.addEventListener('message', handler);
-  return () => channel.removeEventListener('message', handler);
+  window.addEventListener('storage', onStorage);
+  window.addEventListener('achaachaclo_sync_custom', onCustomEvent);
+
+  return () => {
+    channel.removeEventListener('message', handler);
+    window.removeEventListener('storage', onStorage);
+    window.removeEventListener('achaachaclo_sync_custom', onCustomEvent);
+  };
 };
 
 // ============================================================
