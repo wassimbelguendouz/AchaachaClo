@@ -36,11 +36,6 @@ export { db };*/
 import { initializeApp, getApps } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
 
-// Remplacez getFirestore(app) par initializeFirestore :
-export const db = initializeFirestore(app, {
-  ignoreUndefinedProperties: true
-});
-
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDF25injYgsD__Kq3yihtgcsIy7DNlqltI',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'achaachaclo.firebaseapp.com',
@@ -59,14 +54,21 @@ let db = null;
 
 if (isFirebaseConfigured) {
   try {
+    // Initialise l'application une seule fois
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    db = getFirestore(app);
+    
+    // Initialise Firestore avec l'option pour ignorer les valeurs undefined
+    db = initializeFirestore(app, {
+      ignoreUndefinedProperties: true
+    });
+    
     console.log('✅ Firebase Cloud Firestore connecté avec succès !');
   } catch (error) {
     console.error('❌ Erreur lors de l\'initialisation de Firebase :', error);
   }
 } else {
-  console.warn('⚠️ Firebase n\'est pas encore configuré dans le fichier .env (Mode fallback localStorage actif).');
+  console.warn('⚠️ Firebase n\'est pas encore configuré (Mode fallback actif).');
 }
 
+// Une seule et unique exportation à la fin du fichier
 export { db };
