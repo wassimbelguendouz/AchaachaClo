@@ -34,7 +34,12 @@ export { db };*/
 
 // Firebase Cloud Database Initialization & Configuration
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
+
+// Remplacez getFirestore(app) par initializeFirestore :
+export const db = initializeFirestore(app, {
+  ignoreUndefinedProperties: true
+});
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDF25injYgsD__Kq3yihtgcsIy7DNlqltI',
